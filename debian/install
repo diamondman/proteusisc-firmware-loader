@@ -1,0 +1,5 @@
+bin/initialize_digilent_controller usr/sbin/
+bin/profile_digilent_controller usr/sbin/
+52-digilent.rules lib/udev/rules.d/
+xpcusb.ihx lib/firmware/
+52-xusbfwu.rules lib/udev/rules.d/

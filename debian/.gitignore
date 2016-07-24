@@ -1,0 +1,5 @@
+proteusisc-controller-firmware
+*.log
+*.substvars
+debhelper-build-stamp
+files

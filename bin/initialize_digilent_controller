@@ -1,0 +1,204 @@
+#!/usr/bin/python3
+from __future__ import print_function, unicode_literals
+
+import sys
+import os
+import binascii
+import argparse
+
+FW_DIR = '/lib/firmware/digilent-nonfree'
+
+try:
+    import usb1
+    c = usb1.USBContext()
+    pipeerror = usb1.USBErrorPipe
+    def controlRead(h, request_type, request, value,
+                    index, length):
+        return h.controlRead(request_type, request,
+                               value, index, length)
+    def getbus(d):
+        return d.getBusNumber()
+    def getaddr(d):
+        return d.getDeviceAddress()
+    def getVID(h):
+        return h.getVendorID()
+    def getDID(h):
+        return h.getDeviceAddress()
+    def opendev(d):
+        return d.open()
+    def closedev(h):
+        return h.close()
+    def getDevices(params):
+        iter = c.getDeviceIterator()
+        devices = []
+
+        for d in iter:
+            if (not params.vid or d.getVendorID() == params.vid) and\
+               (not params.pid or d.getProductID() == params.pid) and\
+               (not params.busnum or d.getBusNumber() == params.busnum) and\
+               (not params.devaddr or d.getDeviceAddress() == params.devaddr):
+                devices.append(d)
+        return devices
+
+except ImportError:
+    import usb
+    #I prefer usb1 but it is not in debian. When usb1 is
+    #available on debian's servers, the switch will be immediate
+    #Yes, this support layer was likely a waste of time :/
+    pipeerror = usb.core.USBError
+    print("USB1 not found. FALLBACK on PYUSB")
+    def controlRead(h, request_type, request, value,
+                    index, length):
+        return h.ctrl_transfer(request_type, request,
+                               value, index, length)\
+                .tostring()
+    def getbus(d):
+        return d.bus
+    def getaddr(d):
+        return d.address
+    def getVID(h):
+        return h.idVendor
+    def getDID(h):
+        return h.idProduct
+    def opendev(d):
+        return d
+    def closedev(h):
+        pass
+    def getDevices(params):
+        kwargs = {'find_all':True}
+        if params.vid:
+            kwargs['idVendor'] = params.vid
+        if params.pid:
+            kwargs['idProduct'] = params.pid
+        if params.busnum:
+            kwargs['bus'] = params.busnum
+        if params.devaddr:
+            kwargs['address'] = params.devaddr
+
+        return usb.core.find(**kwargs)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog='initialize_digilent_controller',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--vid', type=lambda x: int(x, 16), help='VendorID')
+    parser.add_argument('--pid', type=lambda x: int(x, 16), help='ProductID')
+    parser.add_argument('--busnum', type=int, help='Bus number device is attached to')
+    parser.add_argument('--devaddr', type=int, help='Device Address on BusID')
+    parser.add_argument('-v', action="store_true", default=False, help='Verbose firmware flashing')
+    params = parser.parse_args()
+    print(params)
+
+    if not params.vid and not params.pid and not params.busnum and not params.devaddr:
+        parser.print_help()
+        exit(1)
+
+    devices = getDevices(params)
+
+    print(devices)
+    for d in devices:
+        print("Bus:", getbus(d), "Addr:",  getaddr(d))
+        h = opendev(d)
+        print("ProductName: ", getProductName(h))
+        print("UserName:    ", getUserName(h))
+        print("SerialNumber:", getSerialNumber(h))
+        prod_id = getProductID(h)
+        print("ProductID:   ", hex(prod_id) if prod_id else "NONE")
+        if prod_id and  (prod_id & 0xFF) <= 0xF: #Says 6 bit but acts weird
+            print("FirmwareType:", hex(prod_id & 0x3F))
+
+        dCap = getDevCapabilities(h)
+        print("DeviceCaps:  ", hex(dCap))
+
+        fw_file = None
+
+        if (prod_id & 0xFF) <= 0xF:
+            for f_name in os.listdir(FW_DIR):
+                if f_name.lower().startswith("fx2fw_"+hex(prod_id & 0x3F)[2:].zfill(2)):
+                    fw_file = os.path.join(FW_DIR, f_name)
+                    print("Firmware image found",f_name)
+                    break;
+            else:
+                print("No Firmware Image Found")
+        else:
+            print("Controller does not support firmware loading")
+
+        if fw_file:
+            if getProductIDReturns(h) and dCap != 0:
+                if (prod_id & 0x3F) in (0x5, 0xC, 0xD):
+                    print("********Untested Device.********\n"
+                          "Digilent has some technical debt with their device\n"
+                          "identification scheme. Many hacks are in place to\n"
+                          "help them get around this dark history. Until a\n"
+                          "device has been tested with this flashing tool, it\n"
+                          "can not be guaranteed to be safe. (For example,\n"
+                          "the Nexys2 returns no product id. Feel free to add\n"
+                          "to the logic for your board, or alert the\n"
+                          "maintainer of an unsupported board or cable.")
+                print("Device appears to already have firmware", getProductIDReturns(h), dCap)
+            else:
+                print("Flashing....")
+                dev_path = "/dev/bus/usb/%03d/%03d"%(getbus(d),
+                                                     getaddr(d))
+                res = os.system("/sbin/fxload "+
+                          ("-v " if params.v else "")+
+                          "-t fx2lp -I \""+fw_file+"\" -D "+dev_path)
+                if res:
+                    print("Failed. (Return code %d)"%res)
+                else:
+                    print("Success!")
+        closedev(h)
+        print()
+
+def hex_to_int(h):
+    return int('f483'.encode('hex'), 16)
+
+def index_or_default(s):
+    try:
+        s = s[:s.index(b'\x00')]
+    except ValueError:
+        pass
+    try:
+        s = s[:s.index(b'\xFF')]
+    except ValueError:
+        pass
+    return s
+
+def getProductName(dev_h):
+    d = controlRead(dev_h, 0xC0, 0xE1, 0, 0, 28)
+    return index_or_default(d).decode('utf8')
+
+def getUserName(dev_h):
+    d = controlRead(dev_h, 0xC0, 0xE2, 0, 0, 16)
+    return index_or_default(d).decode('utf8')
+
+def getSerialNumber(dev_h):
+    d = controlRead(dev_h, 0xC0, 0xE4, 0, 0, 12)
+    return index_or_default(d).decode('utf8')
+
+def getFirmwareVersion(dev_h):
+    d = controlRead(dev_h, 0xC0, 0xE6, 0, 0, 4)
+
+def getDevCapabilities(dev_h):
+    d = controlRead(dev_h, 0xC0, 0xE7, 0, 0, 8)
+    return int.from_bytes(d, 'little')
+
+def getProductID(dev_h):
+    try:
+        pid = controlRead(dev_h, 0xC0, 0xE9, 0, 0, 4)
+        return int.from_bytes(pid, 'little')
+    except pipeerror:
+        if getProductName(dev_h) == "DOnbUsb1 V2.0":
+            return 0x00100005 #Nexys2 breaks rank and must be overridden
+        return 0
+
+def getProductIDReturns(dev_h):
+    try:
+        pid = controlRead(dev_h, 0xC0, 0xE9, 0, 0, 4)
+        return True
+    except pipeerror:
+        return False
+
+if __name__ == "__main__":
+    main()

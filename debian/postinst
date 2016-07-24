@@ -1,0 +1,14 @@
+#!/bin/bash -e
+
+URL=https://web.archive.org/web/20160723023108/http://files.digilent.com/Software/Adept2+Runtime/2.16.5/digilent.adept.runtime_2.16.5-x86_64.tar.gz
+FW_INSTALL_DIR=/lib/firmware/digilent-nonfree
+FW_TAR_PATHNAME=digilent.adept.runtime_2.16.5-x86_64/data/firmware/
+
+mkdir -p /lib/firmware/digilent-nonfree
+
+echo -n "	Downloading nonfree firmware..."
+
+(wget -q -O - $URL || echo " Failed: wget exited with $?" 1>&2 && (echo "Success!" 1>&2;echo -n "	Extracting..." 1>&2)) |
+(tar xz -C $FW_INSTALL_DIR --strip-components=3 $FW_TAR_PATHNAME || echo "Failed: tar exited with $?" 1>&2 && echo "Success!")
+
+#DEBHELPER#

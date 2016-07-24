@@ -1,0 +1,6 @@
+*.pyc
+*~
+\#*
+.\#*
+proteusisc-controller-firmware
+__pycache__

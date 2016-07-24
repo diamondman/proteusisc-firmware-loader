@@ -1,0 +1,1 @@
+ATTR{idVendor}=="1443", MODE:="666", RUN+="/usr/sbin/initialize_digilent_controller --busnum=%s{busnum} --devaddr=%s{devnum}"

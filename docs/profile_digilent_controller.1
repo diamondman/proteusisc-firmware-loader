@@ -1,0 +1,20 @@
+.TH profile_digilent_controller 1 "0.0.1" "July 2016" "ProteusISC Helper Commands"
+
+
+.SH NAME
+.B profile_digilent_controller
+- Lists details of attached Digilent controllers.
+
+
+.SH SYNOPSIS
+.B profile_digilent_controller
+
+
+.SH DESCRIPTION
+A profiling tool for digilent boards for adding board support to the
+.B initialize_digilent_controller
+helper script.
+
+Many development boards and programmers from Digilent require their firmware loaded every time the controller are plugged into a computer. Many of these devices share the same productID and vendorID, making it impossible to determine if firmware should be uploaded, what firmware to upload, and if firmware has already been uploaded through udev rules alone.
+
+Digilent has changed the way boards report themselves so there is no one standard command to determine the model and state of the board. Each board/controller must be tested to see how it responds to standard commands.

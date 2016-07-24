@@ -1,0 +1,8 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: myScript
+Upstream-Contact: Jessy Diamond Exum, <jessy.diamondman@gmail.com>
+
+Files: *
+Copyright: 2016, Name, <jessy.diamondman@gmail.com>
+License: LGPL-2.1
+ /usr/share/common-licenses/LGPL-2.1

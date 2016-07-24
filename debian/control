@@ -1,0 +1,20 @@
+Source: proteusisc
+Maintainer: Jessy Diamond Exum, <jessy.diamondman@gmail.com>
+Section: python
+Priority: optional
+Build-Depends: debhelper (>= 9),
+	       dh-python,
+	       python-all,
+	       python-setuptools
+Standards-Version: 3.9.7
+X-Python-Version: >= 2.6
+
+
+Package: proteusisc-controller-firmware
+Architecture: all
+Section: python
+Depends: ${misc:Depends}, ${python:Depends}, fxload, python-usb
+Description: short description
+ Provides UDEV rules, firmware images, and firmware loaders to
+ initialize ISC controllers for ProteusISC.
+Homepage: https://github.com/diamondman/proteusisc

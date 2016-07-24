@@ -1,0 +1,48 @@
+.TH initialize_digilent_controller 1 "0.0.1" "July 2016" "ProteusISC Helper Commands"
+
+
+.SH NAME
+.B initialize_digilent_controller
+- Determines firmware to load on Digilent boards. Triggered by udev.
+
+
+.SH SYNOPSIS
+.B initialize_digilent_controller
+[-h] [--vid VID] [--pid PID] [--busnum BUSNUM] [--devaddr DEVADDR] [-v]
+
+
+.SH DESCRIPTION
+Tool to detect model and state of digilent boards and flash the board with firmware if needed.
+
+Many development boards and programmers from Digilent require their firmware loaded every time the controller are plugged into a computer. Many of these devices share the same productID and vendorID, making it impossible to determine if firmware should be uploaded, what firmware to upload, and if firmware has already been uploaded through udev rules alone.
+
+This tool reads digilent specific details from the devices and determines if a firmware image must be loaded onto the device, and if one is needed, which file.
+
+If you are reading this man page, it is likely that your board is not being initialized properly. This script is 
+.B incomplete
+and does not handle all digilent boards, as digilent has many edge cases for detecting their boards. Only boards that have physically been tested can be guaranteed to work. The following boards have been tested:
+
+Cr2s2, Basys2, Nexys2, Nexys3, Atlys
+
+If you have a board that is not in this list, please contact the maintainer of this package with details including the results of running the
+.B profile_digilent_board
+utility.
+
+.TP
+\fB\-h\fR
+show this help message and exit
+.TP
+\fB\-\-vid\fR
+VendorID filter (default: None)
+.TP
+\fB\-\-pid\fR
+ProductID filter (default: None)
+.TP
+\fB\-\-busnum\fR
+USB busnum filter (default: None)
+.TP
+\fB\-\-devaddr\fR
+USB devaddr filter (default: None)
+.TP
+\fB\-v\fR
+Verbose firmware flashing (default: False)
