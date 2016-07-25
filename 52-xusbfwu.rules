@@ -1,3 +1,5 @@
-SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="03fd", ATTR{idProduct}=="0007", MODE="666", RUN+="/sbin/fxload -v -t fx2 -I '/home/diamondman/Adapt/res/firmware/xusb_emb.hex' -D $tempnode"[
-SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="03fd", ATTR{idProduct}=="000d", MODE="666", RUN+="/sbin/fxload -v -t fx2 -I '/home/diamondman/Adapt/res/firmware/xusb_emb.hex' -D $tempnode"
+#PLATFORM CABLE 1 USB
+SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="03fd", ATTR{idProduct}=="000d", MODE="666", RUN+="/sbin/fxload -v -t fx2lp -I '/lib/firmware/xpcusb.ihx' -D $tempnode"
+
+#POST FW PERMISSION SETTINGS
 SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="03fd", ATTR{idProduct}=="0008", MODE="666"
